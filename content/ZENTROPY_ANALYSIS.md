@@ -285,7 +285,7 @@ Quantum-Guard/
 └── .env.production.example          # Production template
 ```
 
-### Database Schema (PostgreSQL/SQLite)
+<!-- ### Database Schema (PostgreSQL/SQLite)
 
 **Core Tables:**
 
@@ -296,7 +296,7 @@ Quantum-Guard/
 - `transactions` — Transfer records
 - `merkle_batches` — Batch roots + metadata
 - `merkle_batch_leaves` — Individual tx commitments in batch
-- `audit_logs` — Immutable operation log
+- `audit_logs` — Immutable operation log -->
 
 ---
 
@@ -306,37 +306,7 @@ Quantum-Guard/
 
 Zentropy follows a **4-phase distributed architecture**:
 
-```
-┌─────────────────────────────────────────────────────────┐
-│  Phase 1: Quantum Cryptography (External: liboqs)      │
-│  • ML-DSA-44 key generation                              │
-│  • Seed phrase derivation (BIP-39)                       │
-│  • Off-chain signature verification (Rust)               │
-└─────────────────────────────────────────────────────────┘
-
-┌─────────────────────────────────────────────────────────┐
-│  Phase 2: ZK Prover (Rust Service)                      │
-│  • Receives: signature + public key                      │
-│  • Outputs: SHA-256 commitment + proof path              │
-│  • Verifies without exposing raw signatures              │
-│  • Runs as HTTP service (port 8001)                      │
-└─────────────────────────────────────────────────────────┘
-
-┌─────────────────────────────────────────────────────────┐
-│  Phase 3: Smart Contracts (Starknet Cairo)              │
-│  • quantum_account: Validates proof commitments          │
-│  • merkle_audit: Stores batch roots on-chain              │
-│  • account_factory: Deploys accounts counterfactually    │
-└─────────────────────────────────────────────────────────┘
-
-┌─────────────────────────────────────────────────────────┐
-│  Phase 4: Multi-User Custodial API (Python/FastAPI)    │
-│  • User registration + wallet deployment                 │
-│  • Transaction signing + batching + submission           │
-│  • Balance queries + audit trails                        │
-│  • React frontend for UI                                 │
-└─────────────────────────────────────────────────────────┘
-```
+![Architecture Overview](/core-architecture.png)
 
 ### Data Flow: Transaction Lifecycle
 
@@ -2357,53 +2327,7 @@ Transaction Batch (Batch #12345):
 
 **Type**: Data Flow Diagram
 
-**What to show**:
-
-```
-┌─────────────────────────────────────────────────────┐
-│           Key Material Lifecycle                     │
-├─────────────────────────────────────────────────────┤
-│                                                      │
-│ 1. User Registration:                               │
-│    ┌──────────┐      liboqs      ┌─────────────┐   │
-│    │ Register │ ──────────────→  │ ML-DSA-44   │   │
-│    └──────────┘                  │ Keypair Gen │   │
-│                                  └─────────────┘   │
-│                                      ↓              │
-│                                  (pubkey, privkey) │
-│                                      ↓              │
-│    ┌──────────────────────────────────────────┐   │
-│    │ BIP-39 Seed Phrase (24-word mnemonic)   │   │
-│    │ [ONE-TIME DISPLAY to user for backup]   │   │
-│    └──────────────────────────────────────────┘   │
-│                                      ↓              │
-│ 2. Key Encryption (at rest):                       │
-│    ┌─────────────┐   AES-256-GCM  ┌────────────┐  │
-│    │ privkey     │ ─────────────→  │ encrypted  │  │
-│    │ + nonce     │                 │ privkey    │  │
-│    └─────────────┘                 └────────────┘  │
-│         ↑                                ↓          │
-│         │                                │          │
-│    master_key (from .env or HSM)   Store in DB     │
-│                                                      │
-│ 3. Transaction Signing:                            │
-│    ┌──────────────────────────────────────┐       │
-│    │ Load encrypted_privkey from DB       │       │
-│    │ AES-256-GCM Decrypt (with master_key)│       │
-│    │ Dilithium Sign (tx data)              │       │
-│    │ Send signature to Rust Prover        │       │
-│    └──────────────────────────────────────┘       │
-│                                                      │
-│ 4. Proof Generation:                               │
-│    ┌──────────────────────────────────────┐       │
-│    │ Prover: verify signature             │       │
-│    │ → compute SHA-256(pubkey||sig||tx)  │       │
-│    │ → store proof commitment on-chain    │       │
-│    │ (pubkey never exposed after this)    │       │
-│    └──────────────────────────────────────┘       │
-│                                                      │
-└─────────────────────────────────────────────────────┘
-```
+[![](https://mermaid.ink/img/pako:eNqNVttu20YQ_ZXBFoJtVHKpmy98KCBLrC3ElgVRMeCGQbCiVtLCIldZUrEUx2_pW4sidYGgTYOiQC9vBfrW78kPtJ_Q2eXqaqoODdjcuZydOWeW3hviiy4jNslkbnjIYxtuvBBgKx6wgG3ZsNWhEdvKLmwXVHLaGbJoy4SiYyR5QOW0KoZCqpxPLKp-krSFv80m8SKm1-sUO8X1mCMhu0wuR-VpfoE05CHb6IyYL8LuSiF5apWt8jwiZjLmq5WWLXzmAf5wHGHQ0VU_8aa4dIFm-yI-84CeCGOXv9Ss5UujyZay33rh7W0m44W9obj2B1TG0K4lCZkMVBFSBBDFU2ysD_6QRhGLIBYQ8ID7gIxDyEQIQyGukiwdU2M98IVk0OPDoW3ozkaxFFfMNrSYZe6ad-OBXRhNsr7qWrl7a1AjKXwWRQYt4WwJTXX5f2hZObHzVlZO8fcacpfGdFakZnoOS-nS0sDml2HVdKyjdQxWga5gPdywKrGsKix7YQIajTt9SUcDaA5wwvPwxCPNk4rrQN6Gx67TgpZzXHfbrUq7ft7wyNMkSz1dLpkfc1SlfbSwPo6Y3PbIvz-_-VW_e2THtm3V_yKmxfo65O69euVqnJIwI8Ai8pR3xPMIgz_8-MM_f38LQ7224ew0V3MruVIJHrHpiHIJxyzcgIERkd7u-zewPRp3rtg0i1LzF_iyk1aey1hXJ3z9FxzVm7nioTYhQxIpgu1CKXeN029y1fwtcleJgFwOPNJiz8csij2Cy89VxytMaGPS53rf2qXKT3WomlaLhtwubnfecHLt-pkDtbrbPK1cQk9I6FD_ajzCEnYxU-uiM1nYTR-EwmIQCjY8ci7BaVRbl001BbBdaeNYuO2dj5iHM6rkxSY0o2_fKxUDbXuG_MO207j47MQ9SxXCCX05HcWJeN9BxXFzhfJe7rh6NnPhbhtUx4Amajzb-O537FWnsO4zI37alrWjJ0mhr1WhzixFqYA-zHiqUjoz0mbzlTBvcOFTCEXoM8O2AUmhRMt4z20MM6fpIq0zHVI7ekDK4kLKog14khtupap1dOvHjXrj-CNUbE9qSFPC5GtcgVqm8XcqaHfO-W96eZ946En82ms606SrsSXZ71ZkN64NiS7vh-pb8dM3SrwaH_J4wMeBtm9O0Rlf6SAaj_EwL7W1PBiosTqpSYP3Ok60YJul3k3zG8PK-Jix0UWvCZCc-xWHWs3MDwxCaTEIJRuarfPzL-DYaTgf_W1vSvHCfN3f_aIobuH_bWO14YJJ3puu83iP8RMaDTTEH39CVQSjcczAPakoic3XGV69goj31Z94srMBBlMDHgcsNHPyVtUhekv2tPE8D6sDykN1xj-8u1MtuLG6P5yHOe1IPeDYkWY4afS-JrspvqWPgu7JiLoelqw1uuJllSVtXuonpXcdYpqaq0-ypC95l9g9OoxYlgRMBlStib6oekRfYD1i4yteE688gpczTBrR8EshAmLHcoxpUoz7g9liPEIiWY1TnKdgjixxN3VLHYcxsfcLZY1B7BsyIXZxf2_3sFC29g8PDqxyySpkyZTY1u6hZRUPrMLh4X55f2__oHSbJS_1rujK50voKOX3yqWCVS5mCety1OcsuZrrG_rtfxDgl2A?type=png)](https://mermaid.live/edit#pako:eNqNVttu20YQ_ZXBFoJtVHKpmy98KCBLrC3ElgVRMeCGQbCiVtLCIldZUrEUx2_pW4sidYGgTYOiQC9vBfrW78kPtJ_Q2eXqaqoODdjcuZydOWeW3hviiy4jNslkbnjIYxtuvBBgKx6wgG3ZsNWhEdvKLmwXVHLaGbJoy4SiYyR5QOW0KoZCqpxPLKp-krSFv80m8SKm1-sUO8X1mCMhu0wuR-VpfoE05CHb6IyYL8LuSiF5apWt8jwiZjLmq5WWLXzmAf5wHGHQ0VU_8aa4dIFm-yI-84CeCGOXv9Ss5UujyZay33rh7W0m44W9obj2B1TG0K4lCZkMVBFSBBDFU2ysD_6QRhGLIBYQ8ID7gIxDyEQIQyGukiwdU2M98IVk0OPDoW3ozkaxFFfMNrSYZe6ad-OBXRhNsr7qWrl7a1AjKXwWRQYt4WwJTXX5f2hZObHzVlZO8fcacpfGdFakZnoOS-nS0sDml2HVdKyjdQxWga5gPdywKrGsKix7YQIajTt9SUcDaA5wwvPwxCPNk4rrQN6Gx67TgpZzXHfbrUq7ft7wyNMkSz1dLpkfc1SlfbSwPo6Y3PbIvz-_-VW_e2THtm3V_yKmxfo65O69euVqnJIwI8Ai8pR3xPMIgz_8-MM_f38LQ7224ew0V3MruVIJHrHpiHIJxyzcgIERkd7u-zewPRp3rtg0i1LzF_iyk1aey1hXJ3z9FxzVm7nioTYhQxIpgu1CKXeN029y1fwtcleJgFwOPNJiz8csij2Cy89VxytMaGPS53rf2qXKT3WomlaLhtwubnfecHLt-pkDtbrbPK1cQk9I6FD_ajzCEnYxU-uiM1nYTR-EwmIQCjY8ci7BaVRbl001BbBdaeNYuO2dj5iHM6rkxSY0o2_fKxUDbXuG_MO207j47MQ9SxXCCX05HcWJeN9BxXFzhfJe7rh6NnPhbhtUx4Amajzb-O537FWnsO4zI37alrWjJ0mhr1WhzixFqYA-zHiqUjoz0mbzlTBvcOFTCEXoM8O2AUmhRMt4z20MM6fpIq0zHVI7ekDK4kLKog14khtupap1dOvHjXrj-CNUbE9qSFPC5GtcgVqm8XcqaHfO-W96eZ946En82ms606SrsSXZ71ZkN64NiS7vh-pb8dM3SrwaH_J4wMeBtm9O0Rlf6SAaj_EwL7W1PBiosTqpSYP3Ok60YJul3k3zG8PK-Jix0UWvCZCc-xWHWs3MDwxCaTEIJRuarfPzL-DYaTgf_W1vSvHCfN3f_aIobuH_bWO14YJJ3puu83iP8RMaDTTEH39CVQSjcczAPakoic3XGV69goj31Z94srMBBlMDHgcsNHPyVtUhekv2tPE8D6sDykN1xj-8u1MtuLG6P5yHOe1IPeDYkWY4afS-JrspvqWPgu7JiLoelqw1uuJllSVtXuonpXcdYpqaq0-ypC95l9g9OoxYlgRMBlStib6oekRfYD1i4yteE688gpczTBrR8EshAmLHcoxpUoz7g9liPEIiWY1TnKdgjixxN3VLHYcxsfcLZY1B7BsyIXZxf2_3sFC29g8PDqxyySpkyZTY1u6hZRUPrMLh4X55f2__oHSbJS_1rujK50voKOX3yqWCVS5mCety1OcsuZrrG_rtfxDgl2A)
 
 **Tools to use**:
 
