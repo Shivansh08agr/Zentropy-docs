@@ -162,10 +162,18 @@ pqc_backend/v2/
 │   │   ├── SHA-256 hash formatting
 │   │   └── Validation utilities
 │   │
-│   └── __init__.py
+|   |── bip39_english.txt           # 2000+ lines
+│   │   ├── Contains different recovery phrases
+│   │   └── Used by waller service.py for the wallet recovery
+|   |
+│   └── drand_beacon.py             # 100+ lines
+│       ├── Module integrates Protocol lab's drand (Distributed Randomness Beacon)
+│       ├── Fetches verifiable distributed randomness from drand network
+│       └── Injects an unpredictable, unbiased and publically verifiable seed into the ML-DSA-44 key generation process
 │
 ├── tests/
 │   ├── conftest.py                 # pytest fixtures
+|   |── __init__.py
 │   ├── test_api_validation.py      # API input validation
 │   ├── test_audit_service.py       # Audit log tests
 │   ├── test_integration.py         # End-to-end flows
@@ -195,31 +203,12 @@ async def register_user(req: UserCreate, ...):
         result = await _wallet_svc.register_user(conn, ...)
 ```
 
-### Request/Response Lifecycle
+### Cryptographic Key Material Flow
 
-```
-HTTP Request
-    ↓
-Middleware: CORS, logging
-    ↓
-Route handler (_get_org_id auth check)
-    ↓
-Database context (get_db())
-    ↓
-Service method call
-    ↓
-DB query + crypto operations
-    ↓
-Optional: Call Rust Prover (HTTP)
-    ↓
-Response model validation (Pydantic)
-    ↓
-HTTP Response (JSON)
-    ↓
-Response interceptor on frontend
-```
+**Type**: Data Flow Diagram
 
----
+[![](https://mermaid.ink/img/pako:eNqNVttu20YQ_ZXBFoJtVHKpmy98KCBLrC3ElgVRMeCGQbCiVtLCIldZUrEUx2_pW4sidYGgTYOiQC9vBfrW78kPtJ_Q2eXqaqoODdjcuZydOWeW3hviiy4jNslkbnjIYxtuvBBgKx6wgG3ZsNWhEdvKLmwXVHLaGbJoy4SiYyR5QOW0KoZCqpxPLKp-krSFv80m8SKm1-sUO8X1mCMhu0wuR-VpfoE05CHb6IyYL8LuSiF5apWt8jwiZjLmq5WWLXzmAf5wHGHQ0VU_8aa4dIFm-yI-84CeCGOXv9Ss5UujyZay33rh7W0m44W9obj2B1TG0K4lCZkMVBFSBBDFU2ysD_6QRhGLIBYQ8ID7gIxDyEQIQyGukiwdU2M98IVk0OPDoW3ozkaxFFfMNrSYZe6ad-OBXRhNsr7qWrl7a1AjKXwWRQYt4WwJTXX5f2hZObHzVlZO8fcacpfGdFakZnoOS-nS0sDml2HVdKyjdQxWga5gPdywKrGsKix7YQIajTt9SUcDaA5wwvPwxCPNk4rrQN6Gx67TgpZzXHfbrUq7ft7wyNMkSz1dLpkfc1SlfbSwPo6Y3PbIvz-_-VW_e2THtm3V_yKmxfo65O69euVqnJIwI8Ai8pR3xPMIgz_8-MM_f38LQ7224ew0V3MruVIJHrHpiHIJxyzcgIERkd7u-zewPRp3rtg0i1LzF_iyk1aey1hXJ3z9FxzVm7nioTYhQxIpgu1CKXeN029y1fwtcleJgFwOPNJiz8csij2Cy89VxytMaGPS53rf2qXKT3WomlaLhtwubnfecHLt-pkDtbrbPK1cQk9I6FD_ajzCEnYxU-uiM1nYTR-EwmIQCjY8ci7BaVRbl001BbBdaeNYuO2dj5iHM6rkxSY0o2_fKxUDbXuG_MO207j47MQ9SxXCCX05HcWJeN9BxXFzhfJe7rh6NnPhbhtUx4Amajzb-O537FWnsO4zI37alrWjJ0mhr1WhzixFqYA-zHiqUjoz0mbzlTBvcOFTCEXoM8O2AUmhRMt4z20MM6fpIq0zHVI7ekDK4kLKog14khtupap1dOvHjXrj-CNUbE9qSFPC5GtcgVqm8XcqaHfO-W96eZ946En82ms606SrsSXZ71ZkN64NiS7vh-pb8dM3SrwaH_J4wMeBtm9O0Rlf6SAaj_EwL7W1PBiosTqpSYP3Ok60YJul3k3zG8PK-Jix0UWvCZCc-xWHWs3MDwxCaTEIJRuarfPzL-DYaTgf_W1vSvHCfN3f_aIobuH_bWO14YJJ3puu83iP8RMaDTTEH39CVQSjcczAPakoic3XGV69goj31Z94srMBBlMDHgcsNHPyVtUhekv2tPE8D6sDykN1xj-8u1MtuLG6P5yHOe1IPeDYkWY4afS-JrspvqWPgu7JiLoelqw1uuJllSVtXuonpXcdYpqaq0-ypC95l9g9OoxYlgRMBlStib6oekRfYD1i4yteE688gpczTBrR8EshAmLHcoxpUoz7g9liPEIiWY1TnKdgjixxN3VLHYcxsfcLZY1B7BsyIXZxf2_3sFC29g8PDqxyySpkyZTY1u6hZRUPrMLh4X55f2__oHSbJS_1rujK50voKOX3yqWCVS5mCety1OcsuZrrG_rtfxDgl2A?type=png)](https://mermaid.live/edit#pako:eNqNVttu20YQ_ZXBFoJtVHKpmy98KCBLrC3ElgVRMeCGQbCiVtLCIldZUrEUx2_pW4sidYGgTYOiQC9vBfrW78kPtJ_Q2eXqaqoODdjcuZydOWeW3hviiy4jNslkbnjIYxtuvBBgKx6wgG3ZsNWhEdvKLmwXVHLaGbJoy4SiYyR5QOW0KoZCqpxPLKp-krSFv80m8SKm1-sUO8X1mCMhu0wuR-VpfoE05CHb6IyYL8LuSiF5apWt8jwiZjLmq5WWLXzmAf5wHGHQ0VU_8aa4dIFm-yI-84CeCGOXv9Ss5UujyZay33rh7W0m44W9obj2B1TG0K4lCZkMVBFSBBDFU2ysD_6QRhGLIBYQ8ID7gIxDyEQIQyGukiwdU2M98IVk0OPDoW3ozkaxFFfMNrSYZe6ad-OBXRhNsr7qWrl7a1AjKXwWRQYt4WwJTXX5f2hZObHzVlZO8fcacpfGdFakZnoOS-nS0sDml2HVdKyjdQxWga5gPdywKrGsKix7YQIajTt9SUcDaA5wwvPwxCPNk4rrQN6Gx67TgpZzXHfbrUq7ft7wyNMkSz1dLpkfc1SlfbSwPo6Y3PbIvz-_-VW_e2THtm3V_yKmxfo65O69euVqnJIwI8Ai8pR3xPMIgz_8-MM_f38LQ7224ew0V3MruVIJHrHpiHIJxyzcgIERkd7u-zewPRp3rtg0i1LzF_iyk1aey1hXJ3z9FxzVm7nioTYhQxIpgu1CKXeN029y1fwtcleJgFwOPNJiz8csij2Cy89VxytMaGPS53rf2qXKT3WomlaLhtwubnfecHLt-pkDtbrbPK1cQk9I6FD_ajzCEnYxU-uiM1nYTR-EwmIQCjY8ci7BaVRbl001BbBdaeNYuO2dj5iHM6rkxSY0o2_fKxUDbXuG_MO207j47MQ9SxXCCX05HcWJeN9BxXFzhfJe7rh6NnPhbhtUx4Amajzb-O537FWnsO4zI37alrWjJ0mhr1WhzixFqYA-zHiqUjoz0mbzlTBvcOFTCEXoM8O2AUmhRMt4z20MM6fpIq0zHVI7ekDK4kLKog14khtupap1dOvHjXrj-CNUbE9qSFPC5GtcgVqm8XcqaHfO-W96eZ946En82ms606SrsSXZ71ZkN64NiS7vh-pb8dM3SrwaH_J4wMeBtm9O0Rlf6SAaj_EwL7W1PBiosTqpSYP3Ok60YJul3k3zG8PK-Jix0UWvCZCc-xWHWs3MDwxCaTEIJRuarfPzL-DYaTgf_W1vSvHCfN3f_aIobuH_bWO14YJJ3puu83iP8RMaDTTEH39CVQSjcczAPakoic3XGV69goj31Z94srMBBlMDHgcsNHPyVtUhekv2tPE8D6sDykN1xj-8u1MtuLG6P5yHOe1IPeDYkWY4afS-JrspvqWPgu7JiLoelqw1uuJllSVtXuonpXcdYpqaq0-ypC95l9g9OoxYlgRMBlStib6oekRfYD1i4yteE688gpczTBrR8EshAmLHcoxpUoz7g9liPEIiWY1TnKdgjixxN3VLHYcxsfcLZY1B7BsyIXZxf2_3sFC29g8PDqxyySpkyZTY1u6hZRUPrMLh4X55f2__oHSbJS_1rujK50voKOX3yqWCVS5mCety1OcsuZrrG_rtfxDgl2A)
+
 
 ## SERVICE LAYER DEEP DIVE
 
