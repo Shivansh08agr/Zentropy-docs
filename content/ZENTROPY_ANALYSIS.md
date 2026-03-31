@@ -86,6 +86,13 @@ cp .env.example .env
 # - BOOTSTRAP_SECRET=<unique_secret>
 ```
 
+### Bootstrap Secret
+When creating your first organization on the frontend, use the following pre-generated bootstrap secret:
+
+```text
+4299a9d291bf7b2cc88b22aa95f25bd042233c60ff1686a99d80907bc6ce0cd3
+```
+
 ### Step 2: Install Dependencies
 
 ```bash

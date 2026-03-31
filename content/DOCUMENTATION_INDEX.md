@@ -237,6 +237,18 @@
 
 ---
 
+## ENVIRONMENT CONFIGURATION & SECRETS
+
+### Bootstrap Secret
+
+For initial setup and bootstrapping the first organization via the `/api/v2/org/create` endpoint, use the following pre-generated bootstrap secret. You need to enter this secret in the frontend when creating the first organization.
+
+```text
+4299a9d291bf7b2cc88b22aa95f25bd042233c60ff1686a99d80907bc6ce0cd3
+```
+
+---
+
 ## DIAGRAM RECOMMENDATIONS
 
 ### From Main Report: 8 Diagram Types
